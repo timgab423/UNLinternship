@@ -1,0 +1,228 @@
+---
+title: "Physics Resource Center (PRC) Usage"
+author: "Tim Gabriel, Undergraduate Data Analytics Intern"
+date: ""
+output: html_document
+---
+
+```{css, echo=FALSE}
+.gt_table {
+float:left;
+}
+```
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+library(scales)
+library(ggplot2)
+library(gt)
+library(tidyr)
+visits <- read.csv('student_visits_all_share.csv')
+courses <- read.csv('students_in_course_share.csv')
+#Print most recent date
+visits %>%
+  filter(event_name == "PHYS;PS SPRING 2024 EVENT") %>%
+  na.omit() %>%
+  select(in_time) %>%
+  summarize(max_value = max(in_time)) %>%
+  mutate(dateYMD = substr(max_value, 1, 10)) %>%
+  select(dateYMD) -> mostRecentDate
+#Total number of users
+visits %>%
+  filter(event_name == "PHYS;PS SPRING 2024 EVENT") %>%
+  select(student_id) %>%
+  na.omit() %>%
+  arrange(student_id) %>%
+  distinct() %>%
+  count() -> totalUsers
+```
+
+This report is current as of `r mostRecentDate`. The PRC has been used by `r totalUsers` unique students this semester. Note: Courses with no PRC users are not listed here. This graph shows the number of unique students in each course who have used the Physics Resource Center.
+
+```{r, warning=FALSE}
+#Users barchart
+df1 <- visits %>%
+  filter(event_name == "PHYS;PS SPRING 2024 EVENT") %>%
+  select(student_id) %>%
+  na.omit() %>%
+  arrange(student_id) %>%
+  distinct()
+df2 <- courses %>%
+  mutate(course = paste(subject,number)) %>%
+  select(student_id, course) %>%
+  arrange(student_id) %>%
+  distinct() %>%
+  group_by(course) %>%
+  count()
+df4 <- df1 %>%
+  left_join(courses, by="student_id") %>%
+  mutate(course = paste(subject,number)) %>%
+  select(student_id, course) %>%
+  distinct() %>%
+  group_by(course) %>%
+  count() %>%
+  left_join(df2, by="course") %>%
+  rename(scans=n.x, enrollment=n.y) %>%
+  arrange(desc(scans)) %>%
+  ggplot(aes(x=reorder(course, scans), y=scans))+
+  geom_bar(stat="identity")+
+  geom_text(aes(label=scans), hjust=-0.3)+
+  coord_flip()+
+  theme_classic()+
+  labs(x = "Course",
+       y = "Students",
+       title = "PRC Usage by Course Number")
+df4
+```
+
+## Comparison with Total Enrollment in Each Course
+
+This table and chart show how the number of unique PRC users compares with total enrollment. The bargraph shows the number of students who have used the center and the number who have not used the PRC in each course. The bolded column contains the same information as the above chart.
+
+```{r, include=TRUE, warning=FALSE}
+#Users Table
+df3 <- df1 %>%
+  left_join(courses, by="student_id") %>%
+  mutate(course = paste(subject,number)) %>%
+  select(student_id, course) %>%
+  distinct() %>%
+  group_by(course) %>%
+  count() %>%
+  left_join(df2, by="course") %>%
+  mutate(percentage = n.x / n.y) %>%
+  rename(scans=n.x, enrollment=n.y) %>%
+  arrange(desc(scans)) %>%
+  mutate(percentage=percent(percentage,accuracy=0.1)) %>%
+  ungroup() %>%
+  gt(rowname_col = "course") %>%
+  tab_header(
+    title = "PRC Usage compared with Total Enrollment") %>%
+  cols_label(
+    scans = "Users",
+    enrollment = "Enrollment",
+    percentage = "Percent"
+  ) %>%
+  tab_style(
+  style = cell_text(weight = "bold"),
+  locations = cells_body(columns = scans)
+  )
+df3
+```
+
+<p>&nbsp;</p>
+
+```{r,warning=FALSE}
+# Proportion of Users to non-users barchart
+df1 %>%
+  left_join(courses, by="student_id") %>%
+  mutate(course = paste(subject,number)) %>%
+  select(student_id, course) %>%
+  distinct() %>%
+  group_by(course) %>%
+  count() %>%
+  left_join(df2, by="course") %>%
+  rename(users=n.x, enrollment=n.y) %>%
+  arrange(desc(users)) %>%
+  mutate(nonUsers = enrollment - users) %>%
+  pivot_longer(cols = c(nonUsers, users), names_to = "isUser", values_to = "users") %>%
+  mutate(orderPriority = if_else(isUser == "users", users, lead(users))) %>%
+  ggplot(aes(x = reorder(course, orderPriority), y = users, fill = isUser)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "PRC Usage compared with Total Enrollment",
+       x = "Course",
+       y = "Students",
+       fill = "") +
+  scale_fill_discrete(labels = c("nonUsers"="Non-users", "users" = "Center Users"))+
+  coord_flip()+
+  theme_classic()
+
+```
+
+## Generational Designation for PRC Users as Compared to Total Enrollment
+
+Here is a comparison of first generation and continuing generation students in Physics course broken down by total enrollment and students who have used the Physics Resource Center. The percentage of first generation college students is higher among PRC users than the overall enrollment. Remember that these numbers only includes courses which have had at least one student use the PRC.
+
+```{r}
+#FirstGen proportion table
+df6 <- df1 %>%
+  left_join(courses, by="student_id") %>%
+  select(student_id, is_first_generation_hed_student) %>%
+  distinct() %>%
+  group_by(is_first_generation_hed_student) %>%
+  count()
+df7 <- courses %>%
+  select(student_id, is_first_generation_hed_student) %>%
+  arrange(student_id) %>%
+  distinct() %>%
+  group_by(is_first_generation_hed_student) %>%
+  count() %>%
+  left_join(df6, by="is_first_generation_hed_student") %>%
+  rename(isFirstGen = "is_first_generation_hed_student", enrolledStudents = "n.x", PRCusers = "n.y") %>%
+  t() %>% data.frame() %>%
+  mutate(totalStudents = X1+X2) %>%
+  mutate(Proportion = X2/totalStudents) %>%
+  filter(row_number() != 1 ) %>%
+  rename(contGen = X1, firstGen = X2) %>%
+  select(firstGen, contGen, Proportion) %>%
+  mutate(groups = c("Total Enrollment","PRC Users")) %>%
+  gt(rowname_col = "groups") %>%
+  tab_header(
+    title = "PRC Usage by Generation") %>%
+  cols_label(
+    groups = "",
+    firstGen = "First Gen",
+    contGen = "Continuing Gen",
+    Proportion = "Proportion"
+  ) %>%
+  fmt_percent(
+    columns = Proportion,
+    decimals = 1
+  )
+
+df7
+```
+
+<p>&nbsp;</p>
+
+## How Frequently do PRC Users Visit the Center?
+
+Consider this histogram which shows the number of students who have visited the PRC by number of times visited. The majority of PRC users visit one time.
+
+```{r, warning=FALSE, eval=FALSE}
+visits%>%
+  filter(event_name == "PHYS;PS SPRING 2024 EVENT") %>%
+  na.omit() %>%
+  group_by(student_id) %>%
+  count() %>%
+  arrange(desc(n)) %>%
+  ungroup() %>%
+  mutate(index = row_number()) %>%
+  select(index, n) %>%
+  ggplot(aes(x = index, y = n)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Students", y = "Number of Visits", title = "Frequency of Visits per Student")+
+  theme_classic()+
+  scale_y_continuous(breaks = seq(1, 10, by = 1))+
+  theme(axis.text.x = element_blank())
+
+```
+
+```{r, warning=FALSE}
+visits%>%
+  filter(event_name == "PHYS;PS SPRING 2024 EVENT") %>%
+  na.omit() %>%
+  group_by(student_id) %>%
+  count() %>%
+  arrange(desc(n)) %>%
+  ungroup() %>%
+  mutate(index = row_number()) %>%
+  select(index, n) %>%
+  ggplot(aes(x = n)) +
+  geom_histogram(binwidth = 1, fill = "gray", color = "black") +
+  labs(x = "Times Visited", y = "Number of Students", title = "Number of PRC Visits Histogram")+
+  theme_classic()+
+  geom_text(aes(label = ..count..), stat = "count", vjust = -0.5)+
+  scale_x_continuous(breaks = seq(1, 10, by = 1))
+```
+
