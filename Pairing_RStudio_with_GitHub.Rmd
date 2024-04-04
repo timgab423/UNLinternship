@@ -1,0 +1,25 @@
+---
+title: "Pairing RStudio with GitHub"
+author: "Tim Gabriel"
+date: "2024-04-04"
+output: html_document
+---
+# Lisa Lendway from Macalester College
+# Source video: https://www.youtube.com/watch?v=QLFc9gw_Hfs
+
+# Check if you have git installed:
+which git
+
+# Connect to your GitHub
+library(usethis)
+# Name can be anything, email must be from GitHub account
+use_git_config(user.name = "Jane Doe", user.email = "jane@example.org")
+
+# Clone the GitHub Repository
+# Click Code and copy repo url
+
+# In RStudio click File -> New Project -> Version Control -> Git
+# Paste url into Repository URL
+# Git tab appears
+
+# Choose files to uploads by clicking "Staged" box, Commit
