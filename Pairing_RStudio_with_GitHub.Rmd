@@ -23,3 +23,5 @@ use_git_config(user.name = "Jane Doe", user.email = "jane@example.org")
 # Git tab appears
 
 # Choose files to uploads by clicking "Staged" box, Commit
+# Commiting does NOT update on GitHub, "Commits" changes to memory
+# "Push" with Green Arrow to push to GitHub
