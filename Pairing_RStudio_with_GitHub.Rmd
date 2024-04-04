@@ -4,24 +4,26 @@ author: "Tim Gabriel"
 date: "2024-04-04"
 output: html_document
 ---
-# Lisa Lendway from Macalester College
-# Source video: https://www.youtube.com/watch?v=QLFc9gw_Hfs
+Lisa Lendway from Macalester College
+Source video: https://www.youtube.com/watch?v=QLFc9gw_Hfs
 
-# Check if you have git installed:
+Check if you have git installed in terminal
 which git
 
-# Connect to your GitHub
+ Connect to your GitHub, 
+Name can be anything, email must be from GitHub account
+
 library(usethis)
-# Name can be anything, email must be from GitHub account
 use_git_config(user.name = "Jane Doe", user.email = "jane@example.org")
 
-# Clone the GitHub Repository
-# Click Code and copy repo url
+Clone the GitHub Repository
+In GitHub, click Code and copy repo url
+In RStudio, click File -> New Project -> Version Control -> Git
+Paste url into Repository URL
+Git tab appears
 
-# In RStudio click File -> New Project -> Version Control -> Git
-# Paste url into Repository URL
-# Git tab appears
-
-# Choose files to uploads by clicking "Staged" box, Commit
-# Commiting does NOT update on GitHub, "Commits" changes to memory
-# "Push" with Green Arrow to push to GitHub
+Commiting and Pushing Changes
+ Saving makes file appear in Git tab
+ Choose files to uploads by clicking "Staged" box, Commit
+ Commiting does NOT update on GitHub, "Commits" changes to memory
+ "Push" with Green Arrow to push to GitHub
